@@ -1,23 +1,9 @@
-# apollo-client-python
+apollo-client - Python Client for Ctrip's Apollo
+================
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
+方便Python接入配置中心框架 [Apollo](https://github.com/ctripcorp/apollo) 所开发的Python版本客户端。
 
 
-## 入门使用:
-
-* 见demo目录
-
-## 功能点：
-* apollo配置中心拉取配置
-* 支持回调接口
-* secret认证
-* 支持灰度发布
-* 支持本地文件缓存
-* 默认开启热更新，参数配置可以不开启热更新
-* 同时支持python2.x和python3.x，详情见./apollo/下的python_2x.py和python_3x.py文件
-
-## 代码更新
-* 修改实例化方法ApolloClient，在内部默认启动异步热更新线程，可以通过参数配置不开启热更新。(2020.09.15)
-* 修复停机阻塞问题。
-* 增加回调接口，增加secret认证，增加demo
-* 修改获取配置的接口改为不带缓存的接口。如果使用缓存接口，config有多个节点的时候，可能A通知更新，但是B的缓存没有更新到。
-* 增加心跳机制。增加心跳机制，如果不增加心跳机制，apollo的ui界面可能看不到实例。
-* 2021-03-23 修复创建文件夹异常，1.py2并发创建文件夹会抛出异常
+基于https://github.com/xhrg-product/apollo-client-python 
