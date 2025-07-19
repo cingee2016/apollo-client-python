@@ -4,10 +4,16 @@ build-backend = "hatchling.build"
 
 [project]
 name = "apollo-client-python"
-version = "0.2.0"
+version = "0.2.1"
 description = "apollo-client-python - Python Client for Ctrip's Apollo"
 readme = "README.md"
 requires-python = ">=3.9"
+authors = [
+    { name = "cingee", email = "cingee16@outlook.com" },
+]
+[project.urls]
+Homepage = "https://github.com/cingee2016/apollo-client-python"
+Repository = "https://github.com/cingee2016/apollo-client-python"
 
 dependencies = [
 ]
