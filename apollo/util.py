@@ -52,6 +52,13 @@ def get_value_from_dict(namespace_cache, key):
             return kv_data[key]
     return None
 
+# 返回是否获取到的值，不存在则返回None
+def get_config_dict(namespace_cache):
+    if namespace_cache:
+        kv_data = namespace_cache.get(CONFIGURATIONS)
+        return kv_data
+    return None
+
 
 def init_ip():
     try:

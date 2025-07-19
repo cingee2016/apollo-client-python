@@ -19,7 +19,7 @@ from .util import (
     NOTIFICATION_ID,
     NAMESPACE_NAME,
     url_encode_wrapper,
-    signature,
+    signature, get_config_dict,
 )
 
 if version == 2:
@@ -140,6 +140,36 @@ class ApolloClient(object):
                 e,
             )
             return self._convert_type(default_val)
+
+    def get_config(self, namespace="application"):
+        try:
+            # 读取内存配置
+            namespace_cache = self._cache.get(namespace)
+            config_dict = get_config_dict(namespace_cache)
+            if config_dict is not None:
+                return config_dict
+
+            # 读取网络配置
+            namespace_data = self.get_json_from_net(namespace)
+            config_dict = get_config_dict(namespace_cache)
+            if config_dict is not None:
+                return config_dict
+
+            # 读取文件配置
+            namespace_cache = self._get_local_cache(namespace)
+            config_dict = get_config_dict(namespace_cache)
+            if config_dict is not None:
+                return config_dict
+
+            # 如果全部没有获取，返回None
+            return None
+        except Exception as e:
+            logging.getLogger(__name__).error(
+                "get_config has error, [namespace is %s], [error is %s], ",
+                namespace,
+                e,
+            )
+            return None
 
     # 设置某个namespace的key为none，这里不设置default_val，是为了保证函数调用实时的正确性。
     # 假设用户2次default_val不一样，然而这里却用default_val填充，则可能会有问题。
