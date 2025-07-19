@@ -6,4 +6,4 @@ apollo-client-python - Python Client for Ctrip's Apollo
 方便Python接入配置中心框架 [Apollo](https://github.com/ctripcorp/apollo) 所开发的Python版本客户端。
 
 
-基于https://github.com/xhrg-product/apollo-client-python 
+基于https://github.com/xhrg-product/apollo-client-python修改
