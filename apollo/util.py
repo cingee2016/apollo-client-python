@@ -5,16 +5,16 @@
 # @email:634789257@qq.com
 
 import hashlib
-import sys
 import socket
+import sys
 
 version = sys.version_info.major
 
 if version == 2:
-    from .python_2x import *
+    from .python_2x import url_encode
 
 if version == 3:
-    from .python_3x import *
+    from .python_3x import url_encode
 
 # 定义常量
 CONFIGURATIONS = "configurations"
@@ -26,8 +26,11 @@ NAMESPACE_NAME = "namespaceName"
 def signature(timestamp, uri, secret):
     import hmac
     import base64
-    string_to_sign = '' + timestamp + '\n' + uri
-    hmac_code = hmac.new(secret.encode(), string_to_sign.encode(), hashlib.sha1).digest()
+
+    string_to_sign = "" + timestamp + "\n" + uri
+    hmac_code = hmac.new(
+        secret.encode(), string_to_sign.encode(), hashlib.sha1
+    ).digest()
     return base64.b64encode(hmac_code).decode()
 
 
@@ -53,9 +56,22 @@ def get_value_from_dict(namespace_cache, key):
 def init_ip():
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(('8.8.8.8', 53))
+        s.connect(("8.8.8.8", 53))
         ip = s.getsockname()[0]
         return ip
     finally:
         s.close()
     return ""
+
+
+__all__ = [
+    "version",
+    "CONFIGURATIONS",
+    "NOTIFICATION_ID",
+    "NAMESPACE_NAME",
+    "signature",
+    "url_encode_wrapper",
+    "no_key_cache_key",
+    "get_value_from_dict",
+    "init_ip",
+]

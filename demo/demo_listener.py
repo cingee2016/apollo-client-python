@@ -21,8 +21,12 @@ def listener(change_type, namespace, key, value):
     print(change_type, namespace, key, value)
 
 
-client = ApolloClient(app_id="demo-service", cluster="default", config_url=apollo_config_url,
-                      change_listener=listener)
+client = ApolloClient(
+    app_id="demo-service",
+    cluster="default",
+    config_url=apollo_config_url,
+    change_listener=listener,
+)
 val = client.get_value("name", default_val="defaultVal")
 
 print(val)

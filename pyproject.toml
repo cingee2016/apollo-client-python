@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "apollo-client-python"
-version = "0.1.1"
-description = "Add your description here"
+version = "0.1.0.1"
+description = "apollo-client-python - Python Client for Ctrip's Apollo"
 readme = "README.md"
 requires-python = ">=3.9"
 
