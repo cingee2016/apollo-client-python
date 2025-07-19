@@ -78,7 +78,7 @@ class ApolloClient(object):
         self._update_stopped = True
         self._cache = {}
         self._hash = {}
-        self._pull_timeout = 60
+        self._pull_timeout = 75
         self._cache_file_path = os.path.expanduser("~") + "/data/apollo/cache/"
 
         if notification_map is None:
@@ -100,7 +100,7 @@ class ApolloClient(object):
 
     def stop(self):
         self._update_stopped = True
-        logging.getLogger(__name__).info("Stopping listener...")
+        logging.info("Stopping listener...")
 
     def _start_scheduled_update(self):
         self._scheduled_update_thread = threading.Thread(target=self._scheduled_update_loop)
@@ -175,7 +175,7 @@ class ApolloClient(object):
             else:
                 return None
         except Exception as e:
-            logging.getLogger(__name__).error(str(e))
+            logging.error("_get_json_from_net Exception", e)
             return None
 
     # 从本地文件获取配置
@@ -211,7 +211,7 @@ class ApolloClient(object):
                     namespace_data.get(CONFIGURATIONS)
                 )
         else:
-            logging.info("Updating cache... not changed...")
+            logging.info("Updating cache... no change...")
 
     # 更新本地缓存和文件缓存
     def _update_cache_and_file(self, namespace_data, namespace="application"):
@@ -283,7 +283,7 @@ class ApolloClient(object):
                         "old_value": None
                     })
         except BaseException as e:
-            logging.getLogger(__name__).warning(str(e))
+            logging.error("_notify_change Exception", e)
 
     def _start_long_poll_update(self):
         self._long_poll_thread = threading.Thread(target=self._long_poll_update_loop)
@@ -292,11 +292,11 @@ class ApolloClient(object):
         self._long_poll_thread.start()
 
     def _long_poll_update_loop(self):
-        logging.getLogger(__name__).info("start long_poll")
+        logging.info("start long_poll")
         while not self._update_stopped:
             self._long_poll()
             time.sleep(self._cycle_time)
-        logging.getLogger(__name__).info("stopped, long_poll")
+        logging.info("stopped, long_poll")
 
     def _long_poll(self):
         notifications = []
@@ -320,12 +320,10 @@ class ApolloClient(object):
             code, body = http_request(
                 url, self._pull_timeout, headers=self._sign_headers(url)
             )
-            print(url)
-            print(code)
-            print(body)
+
             http_code = code
             if http_code == 304:
-                logging.getLogger(__name__).debug("No change, loop...")
+                logging.debug("No change, loop...")
                 return
             if http_code == 200:
                 data = json.loads(body)
@@ -333,13 +331,13 @@ class ApolloClient(object):
                     namespace = entry[NAMESPACE_NAME]
                     n_id = entry[NOTIFICATION_ID]
                     self._notification_map[namespace] = n_id
-                    logging.getLogger(__name__).info(
+                    logging.info(
                         "%s has changes: notificationId=%d", namespace, n_id
                     )
                     namespace_data = self._get_json_from_net(namespace)
                     self._update_cache_and_file(namespace_data, namespace)
                     return
             else:
-                logging.getLogger(__name__).warning("Sleep...")
+                logging.warning("Sleep...")
         except Exception as e:
-            logging.getLogger(__name__).warning(str(e))
+            logging.error("_long_poll Exception", str(e))
