@@ -20,8 +20,9 @@ from .util import (
     signature,
     get_config_dict,
     http_request,
-    makedirs_wrapper
+    makedirs_wrapper,
 )
+
 
 def _set_basic_logging():
     logging.basicConfig(
@@ -29,6 +30,7 @@ def _set_basic_logging():
         datefmt="%d-%m-%Y:%H:%M:%S",
         level=logging.DEBUG,
     )
+
 
 _debug_flag = True
 
@@ -47,15 +49,15 @@ class ApolloClient(object):
         return cls._instances[key]
 
     def __init__(
-            self,
-            config_url,
-            app_id,
-            cluster="default",
-            secret="",
-            use_scheduled_update=True,
-            use_long_pool_update=False,
-            change_listeners=None,
-            notification_map: dict = None,
+        self,
+        config_url,
+        app_id,
+        cluster="default",
+        secret="",
+        use_scheduled_update=True,
+        use_long_pool_update=False,
+        change_listeners=None,
+        notification_map: dict = None,
     ):
         # 核心参数
         self.config_url = config_url
@@ -103,7 +105,9 @@ class ApolloClient(object):
         logging.info("Stopping listener...")
 
     def _start_scheduled_update(self):
-        self._scheduled_update_thread = threading.Thread(target=self._scheduled_update_loop)
+        self._scheduled_update_thread = threading.Thread(
+            target=self._scheduled_update_loop
+        )
         self._scheduled_update_thread.daemon = True
         self._scheduled_update_thread.start()
 
@@ -151,10 +155,10 @@ class ApolloClient(object):
         headers = {}
         if self.secret == "":
             return headers
-        uri = url[len(self.config_url): len(url)]
+        uri = url[len(self.config_url) : len(url)]
         time_unix_now = str(int(round(time.time() * 1000)))
         headers["Authorization"] = (
-                "Apollo " + self.app_id + ":" + signature(time_unix_now, uri, self.secret)
+            "Apollo " + self.app_id + ":" + signature(time_unix_now, uri, self.secret)
         )
         headers["Timestamp"] = time_unix_now
         return headers
@@ -196,10 +200,7 @@ class ApolloClient(object):
         # 更新本地缓存
         current_data = self._cache.get(namespace)
         if current_data is None:
-            current_data = {
-                "releaseKey": "-1",
-                CONFIGURATIONS: {}
-            }
+            current_data = {"releaseKey": "-1", CONFIGURATIONS: {}}
         if current_data["releaseKey"] != namespace_data["releaseKey"]:
             if _debug_flag:
                 logging.info("Updating cache...")
@@ -208,7 +209,7 @@ class ApolloClient(object):
                 self._notify_change(
                     namespace,
                     current_data.get(CONFIGURATIONS),
-                    namespace_data.get(CONFIGURATIONS)
+                    namespace_data.get(CONFIGURATIONS),
                 )
         else:
             logging.info("Updating cache... no change...")
@@ -224,11 +225,11 @@ class ApolloClient(object):
             pass
         else:
             with open(
-                    os.path.join(
-                        self._cache_file_path,
-                        "%s_configuration_%s.txt" % (self.app_id, namespace),
-                    ),
-                    "w",
+                os.path.join(
+                    self._cache_file_path,
+                    "%s_configuration_%s.txt" % (self.app_id, namespace),
+                ),
+                "w",
             ) as f:
                 f.write(new_string)
                 f.flush()
@@ -254,34 +255,40 @@ class ApolloClient(object):
                 old_value = old_kv.get(key)
                 if new_value is None:
                     # 如果newValue 是空，则表示key，value被删除了。
-                    self._handle_change_listeners({
-                        "action": "delete",
-                        "namespace": namespace,
-                        "key": key,
-                        "value": None,
-                        "old_value": self._convert_type(old_value)
-                    })
+                    self._handle_change_listeners(
+                        {
+                            "action": "delete",
+                            "namespace": namespace,
+                            "key": key,
+                            "value": None,
+                            "old_value": self._convert_type(old_value),
+                        }
+                    )
                     continue
                 if new_value != old_value:
-                    self._handle_change_listeners({
-                        "action": "update",
-                        "namespace": namespace,
-                        "key": key,
-                        "value": self._convert_type(new_value),
-                        "old_value": self._convert_type(old_value)
-                    })
+                    self._handle_change_listeners(
+                        {
+                            "action": "update",
+                            "namespace": namespace,
+                            "key": key,
+                            "value": self._convert_type(new_value),
+                            "old_value": self._convert_type(old_value),
+                        }
+                    )
                     continue
             for key in new_kv:
                 new_value = new_kv.get(key)
                 old_value = old_kv.get(key)
                 if old_value is None:
-                    self._handle_change_listeners({
-                        "action": "add",
-                        "namespace": namespace,
-                        "key": key,
-                        "value": self._convert_type(new_value),
-                        "old_value": None
-                    })
+                    self._handle_change_listeners(
+                        {
+                            "action": "add",
+                            "namespace": namespace,
+                            "key": key,
+                            "value": self._convert_type(new_value),
+                            "old_value": None,
+                        }
+                    )
         except BaseException as e:
             logging.error("_notify_change Exception", e)
 
@@ -331,9 +338,7 @@ class ApolloClient(object):
                     namespace = entry[NAMESPACE_NAME]
                     n_id = entry[NOTIFICATION_ID]
                     self._notification_map[namespace] = n_id
-                    logging.info(
-                        "%s has changes: notificationId=%d", namespace, n_id
-                    )
+                    logging.info("%s has changes: notificationId=%d", namespace, n_id)
                     namespace_data = self._get_json_from_net(namespace)
                     self._update_cache_and_file(namespace_data, namespace)
                     return

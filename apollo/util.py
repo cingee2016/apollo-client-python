@@ -20,19 +20,17 @@ NAMESPACE_NAME = "namespaceName"
 
 def http_request(url, timeout, headers=None):
     try:
-        request = urllib.request.Request(url, headers=headers if headers is not None else {})
+        request = urllib.request.Request(
+            url, headers=headers if headers is not None else {}
+        )
         res = urllib.request.urlopen(request, timeout=timeout)
         body = res.read().decode("utf-8")
         return res.code, body
     except HTTPError as e:
         if e.code == 304:
-            logging.debug(
-                "http_request 304"
-            )
+            logging.debug("http_request 304")
             return 304, None
-        logging.error(
-            "http_request error,code is %d, msg is %s", e.code, e.msg, e
-        )
+        logging.error("http_request error,code is %d, msg is %s", e.code, e.msg, e)
         raise e
 
 
@@ -69,6 +67,7 @@ def get_value_from_dict(namespace_cache, key):
         if key in kv_data:
             return kv_data[key]
     return None
+
 
 # 返回是否获取到的值，不存在则返回None
 def get_config_dict(namespace_cache):
