@@ -5,21 +5,43 @@
 # @email:634789257@qq.com
 
 import hashlib
+import logging
+import os
 import socket
-import sys
-
-version = sys.version_info.major
-
-if version == 2:
-    from .python_2x import url_encode
-
-if version == 3:
-    from .python_3x import url_encode
+import urllib.request
+from urllib import parse
+from urllib.error import HTTPError
 
 # 定义常量
 CONFIGURATIONS = "configurations"
 NOTIFICATION_ID = "notificationId"
 NAMESPACE_NAME = "namespaceName"
+
+
+def http_request(url, timeout, headers=None):
+    try:
+        request = urllib.request.Request(url, headers=headers if headers is not None else {})
+        res = urllib.request.urlopen(request, timeout=timeout)
+        body = res.read().decode("utf-8")
+        return res.code, body
+    except HTTPError as e:
+        if e.code == 304:
+            logging.getLogger(__name__).warning(
+                "http_request error,code is 304, maybe you should check secret"
+            )
+            return 304, None
+        logging.getLogger(__name__).warning(
+            "http_request error,code is %d, msg is %s", e.code, e.msg
+        )
+        raise e
+
+
+def url_encode(params):
+    return parse.urlencode(params)
+
+
+def makedirs_wrapper(path):
+    os.makedirs(path, exist_ok=True)
 
 
 # 对时间戳，uri，秘钥进行加签
@@ -36,10 +58,6 @@ def signature(timestamp, uri, secret):
 
 def url_encode_wrapper(params):
     return url_encode(params)
-
-
-def no_key_cache_key(namespace, key):
-    return "{}{}{}".format(namespace, len(namespace), key)
 
 
 # 返回是否获取到的值，不存在则返回None
@@ -60,25 +78,23 @@ def get_config_dict(namespace_cache):
     return None
 
 
-def init_ip():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+def init_ip() -> str:
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
         s.connect(("8.8.8.8", 53))
         ip = s.getsockname()[0]
         return ip
-    finally:
-        s.close()
-    return ""
 
 
 __all__ = [
-    "version",
     "CONFIGURATIONS",
     "NOTIFICATION_ID",
     "NAMESPACE_NAME",
     "signature",
     "url_encode_wrapper",
-    "no_key_cache_key",
     "get_value_from_dict",
     "init_ip",
+    "get_config_dict",
+    "http_request",
+    "url_encode_wrapper",
+    "makedirs_wrapper",
 ]
