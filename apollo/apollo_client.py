@@ -48,24 +48,24 @@ class ApolloClient(object):
 
     def __init__(
         self,
-        config_url,
-        app_id,
-        cluster="default",
-        secret="",
+        config_url: str = None,
+        app_id: str = None,
+        namespaces: list = None,
+        cluster=None,
+        secret=None,
         enable_scheduled_updates=True,
         enable_long_pool_updates=False,
             auto_update_enabled=False,
         value_change_listeners=None,
-        notification_map: dict = None,
     ):
         # 核心参数
-        self.config_url = config_url
-        self.cluster = cluster
-        self.app_id = app_id
+        self._config_url = config_url
+        self._cluster = cluster
+        self._app_id = app_id
 
         # 鉴权参数
         self.ip = init_ip()
-        self.secret = secret
+        self._secret = secret
 
         # 更新参数
         self._use_scheduled_update = enable_scheduled_updates
@@ -86,17 +86,53 @@ class ApolloClient(object):
         self._update_cache_lock = threading.Lock()
         self._update_cache_and_file_lock = threading.Lock()
 
-        if notification_map is None:
-            notification_map = {"application": -1}
-        self._notification_map = notification_map
 
-        # 客户端准备
+        self._namespaces = namespaces
+
+        # 环境变量
+        self._load_environment()
+
+        # 加载前准备
+        self._notification_map = {}
+        for namespace in namespaces:
+            self._notification_map[namespace] = -1
+
+        # 客户端加载
         self._is_apollo_client_inited = False
         self._path_checker()
         self.update_configs()
         if auto_update_enabled:
             self.start()
         self._is_apollo_client_inited = True
+
+    def _load_environment(self):
+        env = os.environ
+        if self._config_url is None:
+            if 'APOLLO_META_SERVER_ADDRESS' in env:
+                self._config_url = env['APOLLO_META_SERVER_ADDRESS']
+            else:
+                raise RuntimeError("APOLLO_META_SERVER_ADDRESS environment variable not set")
+        if self._app_id is None:
+            if 'APOLLO_APP_ID' in env:
+                self._app_id = env['APOLLO_APP_ID']
+            else:
+                raise RuntimeError("APOLLO_APP_ID environment variable not set")
+        if self._cluster is None:
+            if 'APOLLO_CLUSTER' in env:
+                self._cluster = env['APOLLO_CLUSTER']
+            else:
+                self._cluster = 'default'
+        if self._namespaces is None:
+            if 'APOLLO_NAMESPACES' in env:
+                self._namespaces = env['APOLLO_NAMESPACES'].split(',')
+            else:
+                self._namespaces = ['application']
+        if self._secret is None:
+            if 'APOLLO_APP_SECRET' in env:
+                self._secret = env['APOLLO_APP_SECRET']
+            else:
+                self._secret = ''
+
 
     def start(self):
         self._update_stopped = False
@@ -161,12 +197,12 @@ class ApolloClient(object):
     # 给header增加加签需求
     def _sign_headers(self, url):
         headers = {}
-        if self.secret == "":
+        if self._secret == "":
             return headers
-        uri = url[len(self.config_url) : len(url)]
+        uri = url[len(self._config_url): len(url)]
         time_unix_now = str(int(round(time.time() * 1000)))
         headers["Authorization"] = (
-            "Apollo " + self.app_id + ":" + signature(time_unix_now, uri, self.secret)
+            "Apollo " + self._app_id + ":" + signature(time_unix_now, uri, self._secret)
         )
         headers["Timestamp"] = time_unix_now
         return headers
@@ -177,7 +213,7 @@ class ApolloClient(object):
 
     def _get_json_from_net(self, namespace="application"):
         url = "{}/configs/{}/{}/{}?releaseKey={}&ip={}".format(
-            self.config_url, self.app_id, self.cluster, namespace, "", self.ip
+            self._config_url, self._app_id, self._cluster, namespace, "", self.ip
         )
         try:
             code, body = http_request(url, timeout=3, headers=self._sign_headers(url))
@@ -193,7 +229,7 @@ class ApolloClient(object):
     # 从本地文件获取配置
     def _get_json_from_local_cache(self, namespace="application"):
         cache_file_path = os.path.join(
-            self._cache_file_path, "%s_configuration_%s.txt" % (self.app_id, namespace)
+            self._cache_file_path, "%s_configuration_%s.txt" % (self._app_id, namespace)
         )
         if os.path.isfile(cache_file_path):
             with open(cache_file_path, "r") as f:
@@ -240,7 +276,7 @@ class ApolloClient(object):
                     with open(
                             os.path.join(
                                 self._cache_file_path,
-                                "%s_configuration_%s.txt" % (self.app_id, namespace),
+                                "%s_configuration_%s.txt" % (self._app_id, namespace),
                             ),
                             "w",
                     ) as f:
@@ -329,10 +365,10 @@ class ApolloClient(object):
             # 如果长度为0直接返回
             if len(notifications) == 0:
                 return
-            url = "{}/notifications/v2".format(self.config_url)
+            url = "{}/notifications/v2".format(self._config_url)
             params = {
-                "appId": self.app_id,
-                "cluster": self.cluster,
+                "appId": self._app_id,
+                "cluster": self._cluster,
                 "notifications": json.dumps(notifications, ensure_ascii=False),
             }
             param_str = url_encode_wrapper(params)
