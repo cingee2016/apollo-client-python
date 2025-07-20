@@ -32,7 +32,7 @@ def _set_basic_logging():
     )
 
 
-_debug_flag = True
+_debug_flag = False
 
 
 class ApolloClient(object):
