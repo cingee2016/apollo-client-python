@@ -38,8 +38,6 @@ _debug_flag = True
 class ApolloClient(object):
     _instances = {}
     _create_client_lock = threading.Lock()
-    _update_cache_lock = threading.Lock()
-    _cache_file_write_lock = threading.Lock()
 
     def __new__(cls, *args, **kwargs):
         key = f"{args},{sorted(kwargs.items())}"
@@ -54,9 +52,10 @@ class ApolloClient(object):
         app_id,
         cluster="default",
         secret="",
-        use_scheduled_update=True,
-        use_long_pool_update=False,
-        change_listeners=None,
+        enable_scheduled_updates=True,
+        enable_long_pool_updates=False,
+            auto_update_enabled=False,
+        value_change_listeners=None,
         notification_map: dict = None,
     ):
         # 核心参数
@@ -69,11 +68,13 @@ class ApolloClient(object):
         self.secret = secret
 
         # 更新参数
-        self._use_scheduled_update = use_scheduled_update
-        self._use_long_pool_update = use_long_pool_update
+        self._use_scheduled_update = enable_scheduled_updates
+        self._use_long_pool_update = enable_long_pool_updates
         self._long_poll_thread = None
         self._scheduled_update_thread = None
-        self._change_listeners = change_listeners  # "add" "delete" "update"
+        self._value_change_listeners = value_change_listeners  # "add" "delete" "update"
+        if self._value_change_listeners is None:
+            self._value_change_listeners = []
 
         # 私有控制变量
         self._cycle_time = 2
@@ -82,6 +83,8 @@ class ApolloClient(object):
         self._hash = {}
         self._pull_timeout = 75
         self._cache_file_path = os.path.expanduser("~") + "/data/apollo/cache/"
+        self._update_cache_lock = threading.Lock()
+        self._update_cache_and_file_lock = threading.Lock()
 
         if notification_map is None:
             notification_map = {"application": -1}
@@ -91,6 +94,8 @@ class ApolloClient(object):
         self._is_apollo_client_inited = False
         self._path_checker()
         self.update_configs()
+        if auto_update_enabled:
+            self.start()
         self._is_apollo_client_inited = True
 
     def start(self):
@@ -103,6 +108,9 @@ class ApolloClient(object):
     def stop(self):
         self._update_stopped = True
         logging.info("Stopping listener...")
+
+    def add_value_change_listener(self, listener):
+        self._value_change_listeners.append(listener)
 
     def _start_scheduled_update(self):
         self._scheduled_update_thread = threading.Thread(
@@ -197,53 +205,58 @@ class ApolloClient(object):
 
     # 更新本地缓存
     def _update_cache(self, namespace_data, namespace="application"):
-        # 更新本地缓存
-        current_data = self._cache.get(namespace)
-        if current_data is None:
-            current_data = {"releaseKey": "-1", CONFIGURATIONS: {}}
-        if current_data["releaseKey"] != namespace_data["releaseKey"]:
+        with self._update_cache_lock:
+            # 更新本地缓存
+            current_data = self._cache.get(namespace)
+            if current_data is None:
+                current_data = {"releaseKey": "-1", CONFIGURATIONS: {}}
+            if current_data["releaseKey"]  == "-1" or current_data["releaseKey"]  != namespace_data["releaseKey"]:
+                if _debug_flag:
+                    logging.info("Updating cache...")
+                self._cache[namespace] = namespace_data
+                if self._is_apollo_client_inited:
+                    self._notify_change(
+                        namespace,
+                        current_data.get(CONFIGURATIONS),
+                        namespace_data.get(CONFIGURATIONS),
+                    )
+                return True
             if _debug_flag:
-                logging.info("Updating cache...")
-            self._cache[namespace] = namespace_data
-            if self._is_apollo_client_inited:
-                self._notify_change(
-                    namespace,
-                    current_data.get(CONFIGURATIONS),
-                    namespace_data.get(CONFIGURATIONS),
-                )
-        else:
-            logging.info("Updating cache... no change...")
+                logging.info("Updating cache... no change...")
+            return False
 
     # 更新本地缓存和文件缓存
     def _update_cache_and_file(self, namespace_data, namespace="application"):
-        # 更新本地缓存
-        self._update_cache(namespace_data, namespace)
-        # 更新文件缓存
-        new_string = json.dumps(namespace_data)
-        new_hash = hashlib.md5(new_string.encode("utf-8")).hexdigest()
-        if self._hash.get(namespace) == new_hash:
-            pass
-        else:
-            with open(
-                os.path.join(
-                    self._cache_file_path,
-                    "%s_configuration_%s.txt" % (self.app_id, namespace),
-                ),
-                "w",
-            ) as f:
-                f.write(new_string)
-                f.flush()
-            self._hash[namespace] = new_hash
+        with self._update_cache_and_file_lock:
+            # 更新本地缓存
+            updated = self._update_cache(namespace_data, namespace)
+            # 更新文件缓存
+            if updated:
+                new_string = json.dumps(namespace_data)
+                new_hash = hashlib.md5(new_string.encode("utf-8")).hexdigest()
+                if self._hash.get(namespace) == new_hash:
+                    pass
+                else:
+                    with open(
+                            os.path.join(
+                                self._cache_file_path,
+                                "%s_configuration_%s.txt" % (self.app_id, namespace),
+                            ),
+                            "w",
+                    ) as f:
+                        f.write(new_string)
+                        f.flush()
+                    self._hash[namespace] = new_hash
 
     def _handle_change_listeners(self, change_event):
-        for change_listener in self._change_listeners:
+        for change_listener in self._value_change_listeners:
             change_listener(change_event)
 
     # 调用设置的回调函数，如果异常，直接try掉
     def _notify_change(self, namespace, old_kv, new_kv):
-        if self._change_listeners is None:
+        if self._value_change_listeners is None:
             return
-        if len(self._change_listeners) == 0:
+        if len(self._value_change_listeners) == 0:
             return
         if old_kv is None:
             old_kv = {}
@@ -346,3 +359,7 @@ class ApolloClient(object):
                 logging.warning("Sleep...")
         except Exception as e:
             logging.error("_long_poll Exception", str(e))
+
+__all__ = [
+    "ApolloClient"
+]

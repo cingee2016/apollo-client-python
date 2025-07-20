@@ -28,7 +28,6 @@ def http_request(url, timeout, headers=None):
         return res.code, body
     except HTTPError as e:
         if e.code == 304:
-            logging.debug("http_request 304")
             return 304, None
         logging.error("http_request error,code is %d, msg is %s", e.code, e.msg, e)
         raise e

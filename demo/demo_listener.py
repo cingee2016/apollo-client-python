@@ -13,20 +13,20 @@ apollo_config_url = os.environ.get("APOLLO_CONFIG_URL")
 print(apollo_config_url)
 
 
-# ('update', u'application', u'name', u'12311')
-# ('update', u'application', u'name', u'12311111111111111111')
-# ('delete', u'application', u'aaa', u'vvv111111')
-# ('add', u'application', u'cc', u'dd')
-def listener(change_type, namespace, key, value):
-    print(change_type, namespace, key, value)
+# {'action': 'update', 'namespace': 'application', 'key': 'infra.redis.database', 'value': '1', 'old_value': '0'}
+# {'action': 'add', 'namespace': 'application', 'key': 'infra.redis.database', 'value': '1', 'old_value': None}
+# {'action': 'delete', 'namespace': 'application', 'key': 'infra.redis.database', 'value': None, 'old_value': '0'}
+def listener(event):
+    print(event)
 
 
 client = ApolloClient(
     app_id="demo-service",
     cluster="default",
     config_url=apollo_config_url,
-    change_listener=listener,
+    value_change_listeners=[listener],
 )
+client.start()
 val = client.get_value("name", default_val="defaultVal")
 
 print(val)
