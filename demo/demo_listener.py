@@ -5,9 +5,11 @@
 # @email:634789257@qq.com
 import os
 import time
+from dotenv import load_dotenv
 
 from apollo.apollo_client import ApolloClient
 
+load_dotenv()
 apollo_config_url = os.environ.get("APOLLO_CONFIG_URL")
 
 print(apollo_config_url)

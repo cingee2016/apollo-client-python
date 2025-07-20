@@ -94,7 +94,7 @@ class ApolloClient(object):
 
         # 加载前准备
         self._notification_map = {}
-        for namespace in namespaces:
+        for namespace in self._namespaces:
             self._notification_map[namespace] = -1
 
         # 客户端加载
