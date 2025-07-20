@@ -13,4 +13,14 @@ apollo-client-python - Python Client for Ctrip's Apollo
 * 本地文件缓存
 * 热更新，通过参数配置
 
-  
+### 增加从环境变量读取基础配置：
+### # Apollo 必需配置
+APOLLO_META_SERVER_ADDRESS=http://localhost:8080
+APOLLO_APP_ID=your-app-id
+
+### # 认证配置
+APOLLO_APP_SECRET=your-app-secret
+
+### # 可选配置
+APOLLO_CLUSTER=default
+APOLLO_NAMESPACES=application
