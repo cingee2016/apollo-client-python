@@ -12,6 +12,7 @@ apollo-client-python - Python Client for Ctrip's Apollo
 * secret认证
 * 本地文件缓存
 * 热更新，通过参数配置
+* add dotenv
 
 ### 增加从环境变量读取基础配置：
 ### # Apollo 必需配置

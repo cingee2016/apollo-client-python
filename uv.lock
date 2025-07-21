@@ -4,18 +4,17 @@ requires-python = ">=3.9"
 
 [[package]]
 name = "apollo-client-python"
-version = "0.2.2.1"
+version = "0.2.3"
 source = { editable = "." }
-
-[package.dev-dependencies]
-dev = [
+dependencies = [
     { name = "python-dotenv" },
 ]
 
 [package.metadata]
+requires-dist = [{ name = "python-dotenv", specifier = ">=1.1.1" }]
 
 [package.metadata.requires-dev]
-dev = [{ name = "python-dotenv", specifier = ">=1.1.1" }]
+dev = []
 
 [[package]]
 name = "python-dotenv"

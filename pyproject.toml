@@ -13,6 +13,7 @@ authors = [
 ]
 
 dependencies = [
+    "python-dotenv>=1.1.1",
 ]
 
 classifiers = [
@@ -25,7 +26,6 @@ Repository = "https://github.com/cingee2016/apollo-client-python"
 
 [dependency-groups]
 dev = [
-    "python-dotenv>=1.1.1",
 ]
 
 

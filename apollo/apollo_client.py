@@ -57,6 +57,7 @@ class ApolloClient(object):
         enable_long_pool_updates=False,
             auto_update_enabled=False,
         value_change_listeners=None,
+            enable_dotenv=True,
     ):
         # 核心参数
         self._config_url = config_url
@@ -90,6 +91,9 @@ class ApolloClient(object):
         self._namespaces = namespaces
 
         # 环境变量
+        if enable_dotenv:
+            from dotenv import load_dotenv
+            load_dotenv()
         self._load_environment()
 
         # 加载前准备
